@@ -2,6 +2,16 @@
 // 🔗 1. เรียกใช้งานไฟล์เชื่อมต่อฐานข้อมูล MySQL แทนที่ระบบ JSON เดิม
 require_once 'connect.php';
 
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (empty($_SESSION['is_admin_logged_in'])) {
+    $redirectUrl = urlencode($_SERVER['REQUEST_URI']);
+    header("Location: login.php?redirect={$redirectUrl}");
+    exit;
+}
+
 $active_tab = $_GET['tab'] ?? 'news';
 
 // ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. (จาก MySQL) เป็น พ.ศ. แสดงในตาราง
@@ -309,8 +319,11 @@ if ($active_tab == 'news') {
 <body class="bg-light">
 
 <div class="container my-5">
-    <h2 class="mb-4 text-center text-hospital fw-bold">ระบบจัดการข้อมูลเว็บไซต์ (Admin Dashboard)</h2>
-    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <h2 class="mb-0 text-hospital fw-bold">ระบบจัดการข้อมูลเว็บไซต์ (Admin Dashboard)</h2>
+        <a href="logout.php" class="btn btn-outline-secondary">ออกจากระบบ</a>
+    </div>
+
     <ul class="nav nav-tabs" id="hospitalTabs">
         <li class="nav-item">
             <a class="nav-link <?= $active_tab == 'news' ? 'active' : '' ?>" href="?tab=news">

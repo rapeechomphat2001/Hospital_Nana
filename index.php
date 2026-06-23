@@ -181,7 +181,10 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
 <div class="top-bar">
     <div class="container d-flex justify-content-between align-items-center flex-wrap">
         <div><i class="bi bi-telephone-fill"></i> สายด่วน: 044-316-999 ต่อ 4400 | <i class="bi bi-envelope-fill"></i> nursing@pkc.go.th</div>
-        <div id="liveClock">กำลังโหลดเวลา...</div>
+        <div class="d-flex align-items-center gap-2">
+            <span id="liveClock">กำลังโหลดเวลา...</span>
+            <a href="login.php" class="btn btn-sm btn-outline-light">เข้าสู่ระบบ</a>
+        </div>
     </div>
 </div>
 

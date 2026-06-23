@@ -80,20 +80,6 @@ INSERT INTO `department_contents` (`id`, `department_id`, `section`, `title`, `c
 	(16, 24, 'knowledge', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782118568_dept_content_WI__________________________________________________________________________________.docx', NULL, 4, '2026-06-22 08:56:08'),
 	(17, 24, 'wi', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782118660_dept_content_WI__________________________________________________________________________________.docx', NULL, 4, '2026-06-22 08:57:40');
 
--- Dumping structure for table db_hospital.department_pages
-CREATE TABLE IF NOT EXISTS `department_pages` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `dept_id` int NOT NULL,
-  `content_title` varchar(255) NOT NULL,
-  `content_body` longtext,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `dept_id` (`dept_id`),
-  CONSTRAINT `department_pages_ibfk_1` FOREIGN KEY (`dept_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- Dumping data for table db_hospital.department_pages: ~0 rows (approximately)
-
 -- Dumping structure for table db_hospital.events
 CREATE TABLE IF NOT EXISTS `events` (
   `id` int NOT NULL AUTO_INCREMENT,
