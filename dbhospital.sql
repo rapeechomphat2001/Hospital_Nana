@@ -19,6 +19,23 @@
 CREATE DATABASE IF NOT EXISTS `db_hospital` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
 USE `db_hospital`;
 
+-- Dumping structure for table db_hospital.banners
+CREATE TABLE IF NOT EXISTS `banners` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `subtitle` text,
+  `image_name` varchar(500) DEFAULT NULL,
+  `link_url` varchar(500) DEFAULT NULL,
+  `sort_order` int NOT NULL DEFAULT '1',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table db_hospital.banners: ~1 rows (approximately)
+INSERT INTO `banners` (`id`, `title`, `subtitle`, `image_name`, `link_url`, `sort_order`, `is_active`, `created_at`) VALUES
+	(1, 'พัฒนาคุณภาพอย่างต่อเนื่อง', '', '1782285999_banner___________________________________________.png', NULL, 1, 1, '2026-06-24 07:26:39');
+
 -- Dumping structure for table db_hospital.departments
 CREATE TABLE IF NOT EXISTS `departments` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -45,7 +62,7 @@ INSERT INTO `departments` (`id`, `name`, `link_url`) VALUES
 	(24, 'กุมารเวชกรรม', NULL),
 	(25, 'ศัลยกรรมกระดูก', NULL),
 	(26, 'ไตเทียม', NULL),
-	(27, 'CSSD', 'https://www.google.com/?hl=th&zx=1781661033936'),
+	(27, 'CSSD', NULL),
 	(28, 'รักษ์จิต', NULL);
 
 -- Dumping structure for table db_hospital.department_contents
@@ -63,22 +80,22 @@ CREATE TABLE IF NOT EXISTS `department_contents` (
   KEY `idx_department_section` (`department_id`,`section`)
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Dumping data for table db_hospital.department_contents: ~6 rows (approximately)
+-- Dumping data for table db_hospital.department_contents: ~14 rows (approximately)
 INSERT INTO `department_contents` (`id`, `department_id`, `section`, `title`, `content`, `file_name`, `link_url`, `sort_order`, `created_at`) VALUES
-	(1, 24, 'knowledge', 'แนะนำหอผู้ป่วยกุมารเวชกรรม', '', '1781844524_dept_content_______________________________________________________________________________.MP4', NULL, 1, '2026-06-19 04:48:44'),
+	(1, 24, 'knowledge', 'แนะนำหอผู้ป่วยกุมารเวชกรรม', '', '1782272180_0_dept_content_______________________________________________________________________________.MP4', NULL, 1, '2026-06-19 04:48:44'),
 	(4, 24, 'knowledge', 'กำหนดแนวทางลดข้อร้องเรียน', '', '1781851229_dept_content____________________________________________________________________________.pdf', 'https://drive.google.com/drive/folders/100m-vsj3rdw-SrBSzZSlE4VycbyOanxI', 2, '2026-06-19 06:40:29'),
 	(5, 24, 'knowledge', 'บอร์ดให้ความรู้ หอผู้ป่วยกุมานเวชกรรม ชักจากไข้สูง', '', '1781851836_dept_content___________________________________________________________________________________________________________________________________________________.pdf', NULL, 3, '2026-06-19 06:50:36'),
 	(6, 24, 'knowledge', 'บอร์ดให้ความรู้ หอผู้ป่วยกุมารเวชกรรม', '', '1781851981_dept_content______________________________________________________________________________________________________________.pdf', NULL, 4, '2026-06-19 06:53:01'),
 	(8, 24, 'personnel', 'นางสาวจุฑาทิพย์ ถนอมทรัพย์', 'ผู้ช่วยพยาบาล', '1781853231_dept_content_IMG_4124.JPG', NULL, 1, '2026-06-19 07:11:57'),
-	(9, 24, 'service_profile', 'SP_หอผู้ป่วยกุมารเวชกรรมปีงบประมาณ2568', '', '1782110692_dept_content_SP______________________________________________________________________________68__1_.docx', NULL, 1, '2026-06-22 06:44:52'),
+	(9, 24, 'service_profile', 'SP_หอผู้ป่วยกุมารเวชกรรมปีงบประมาณ2568', '', '1782275019_0_dept_content_SP.pdf', NULL, 1, '2026-06-22 06:44:52'),
 	(10, 24, 'structure', 'โครงสร้างการบริหารงานตึกเด็ก', '', '1782118135_dept_content______________________________________________________________________________________.pdf', NULL, 1, '2026-06-22 08:48:55'),
-	(11, 24, 'knowledge', 'รายชื่อคณะกรรมการ หน่วยงาน หอผู้ป่วยเด็ก', '', '1782118171_dept_content_____________________________________________________________________________________________________________________.docx', NULL, 2, '2026-06-22 08:49:31'),
+	(11, 24, 'knowledge', 'รายชื่อคณะกรรมการ หน่วยงาน หอผู้ป่วยเด็ก', '', '1782272501_0_dept_content___________________________________________________________________________________________.pdf', NULL, 2, '2026-06-22 08:49:31'),
 	(12, 24, 'structure', 'รายชื่อคณะกรรมการ หน่อยงาน หอผู้ป่วยเด็ก', '', '1782118335_dept_content_____________________________________________________________________________________________________________________.docx', NULL, 2, '2026-06-22 08:52:15'),
 	(13, 24, 'wi', 'CNPG AGE', '', '1782118432_dept_content_CNPG_AGE.pdf', NULL, 1, '2026-06-22 08:53:52'),
 	(14, 24, 'wi', 'CNPG febrile seizure', '', '1782118477_dept_content_CNPG_febrile_seizure.pdf', NULL, 2, '2026-06-22 08:54:37'),
 	(15, 24, 'wi', 'CNPG-Thalassemia ในเด็ก', '', '1782118518_dept_content_CNPG-_Thalassemia___________________.pdf', NULL, 3, '2026-06-22 08:55:18'),
-	(16, 24, 'knowledge', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782118568_dept_content_WI__________________________________________________________________________________.docx', NULL, 4, '2026-06-22 08:56:08'),
-	(17, 24, 'wi', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782118660_dept_content_WI__________________________________________________________________________________.docx', NULL, 4, '2026-06-22 08:57:40');
+	(16, 24, 'knowledge', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782272372_0_dept_content________________________________________________________________.pdf', NULL, 4, '2026-06-22 08:56:08'),
+	(17, 24, 'wi', 'WI การพยาบาลป้องกันพลัดตกหกล้ม', '', '1782272328_0_dept_content________________________________________________________________.pdf', NULL, 4, '2026-06-22 08:57:40');
 
 -- Dumping structure for table db_hospital.events
 CREATE TABLE IF NOT EXISTS `events` (
