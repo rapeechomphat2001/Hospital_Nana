@@ -48,6 +48,17 @@ if ($dept_id > 0) {
 $stmt->execute($params);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+function parseSectionFiles($fileData) {
+    if (empty($fileData)) return [];
+
+    $decoded = json_decode($fileData, true);
+    if (is_array($decoded)) {
+        return array_values(array_filter($decoded, fn($fileName) => is_string($fileName) && $fileName !== ''));
+    }
+
+    return is_string($fileData) ? [$fileData] : [];
+}
+
 function renderSectionPreview($fileName) {
     if (empty($fileName)) {
         return '<div class="section-file-box"><i class="bi bi-file-earmark-text"></i></div>';
@@ -57,21 +68,53 @@ function renderSectionPreview($fileName) {
     $path = 'uploads/' . $safeFile;
     $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-    // PDF: embed preview
+    // PDF: preview card คลิกแล้วเปิด modal fullscreen
     if ($ext === 'pdf') {
-        return '<div class="section-pdf-preview" style="width:100%;height:220px;overflow:hidden;background:#f8f5f0;"><iframe src="' . $path . '#page=1&toolbar=0&navpanes=0" style="width:100%;height:100%;border:0;"></iframe></div>';
+        return '<div class="section-preview-action section-pdf-preview pdf-trigger" data-src="' . $path . '" style="cursor:pointer;">
+            <div style="width:100%;height:100%;overflow:hidden;position:relative;">
+                <iframe src="' . $path . '#page=1&toolbar=0&navpanes=0&scrollbar=0&view=FitH" style="position:absolute;top:0;left:0;width:calc(100% + 20px);height:calc(100% + 20px);border:0;pointer-events:none;" scrolling="no"></iframe>
+            </div>
+        </div>';
     }
 
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-        return '<img src="' . $path . '" class="section-card-img" alt="' . $safeFile . '">';
+        return '<a href="' . $path . '" target="_blank" rel="noopener noreferrer" class="section-preview-action"><img src="' . $path . '" class="section-card-img" alt="' . $safeFile . '"></a>';
     }
 
     if (in_array($ext, ['doc', 'docx'])) {
-        return '<div class="section-file-box"><i class="bi bi-file-earmark-word-fill"></i><span>' . strtoupper($ext) . '</span></div>';
+        return '<a href="' . $path . '" class="section-preview-action" download>
+            <div class="section-file-box">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="64" height="64">
+                    <path fill="#2196F3" d="M41,10H25v28h16c0.553,0,1-0.447,1-1V11C42,10.447,41.553,10,41,10z"/>
+                    <path fill="#FFFFFF" d="M25 15.001H39V17H25zM25 19H39V21H25zM25 23.001H39V25.001H25zM25 27H39V29H25zM25 31H39V33.001H25z"/>
+                    <path fill="#0D47A1" d="M27 42L6 38 6 10 27 6z"/>
+                    <path fill="#FFFFFF" d="M21.167,31.012H18.45l-1.802-8.988c-0.098-0.477-0.155-0.996-0.174-1.560h-0.049c-0.016,0.448-0.094,0.976-0.232,1.560l-2.001,8.988h-2.827l-2.569-13h2.537l1.261,7.810c0.055,0.368,0.095,0.830,0.127,1.375h0.038c0.023-0.424,0.089-0.895,0.197-1.424l1.994-7.761h2.429l1.705,7.888c0.058,0.275,0.100,0.723,0.127,1.349h0.042c0.018-0.498,0.059-0.951,0.127-1.349l1.219-7.888h2.514L21.167,31.012z"/>
+                </svg>
+                <span>' . strtoupper($ext) . '</span>
+            </div>
+        </a>';
     }
 
     $display = strlen($safeFile) > 60 ? substr($safeFile, 0, 40) . '...' . substr($safeFile, -10) : $safeFile;
-    return '<div class="section-file-box"><i class="bi bi-file-earmark-text"></i><span>' . $display . '</span></div>';
+    return '<a href="' . $path . '" class="section-preview-action" download><div class="section-file-box"><i class="bi bi-file-earmark-text"></i><span>' . $display . '</span></div></a>';
+}
+
+function renderSectionPreviews($files) {
+    if (empty($files)) {
+        return renderSectionPreview('');
+    }
+
+    if (count($files) === 1) {
+        return '<div class="section-file-gallery-item" style="width:100%;height:100%;">' . renderSectionPreview($files[0]) . '</div>';
+    }
+
+    $html = '<div class="section-file-gallery">';
+    foreach ($files as $i => $fileName) {
+        $html .= '<div class="section-file-gallery-item" data-index="' . $i . '">' . renderSectionPreview($fileName) . '</div>';
+    }
+    $html .= '</div>';
+
+    return $html;
 }
 
 function sectionActionLabel($fileName, $linkUrl) {
@@ -97,8 +140,8 @@ function sectionActionLabel($fileName, $linkUrl) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         :root {
-            --dept-orange: #d96f18;
-            --dept-orange-dark: #b95b0f;
+            --dept-orange: #e78551;
+            --dept-orange-dark: #b86c2e;
             --dept-bg: #fcf8f5;
             --dept-text: #2d3748;
         }
@@ -142,37 +185,73 @@ function sectionActionLabel($fileName, $linkUrl) {
         .section-card:hover {
             transform: translateY(-5px);
         }
-            .section-card .card-body { border-top: none !important; box-shadow: none !important; }
-            .section-card hr { display: none !important; }
-            .section-card .section-preview + .card-body,
-            .section-card .section-preview,
-            .section-card .section-preview::before,
-            .section-card .section-preview::after,
-            .section-card .card-body::before,
-            .section-card .card-body::after {
-                border-top: none !important;
-                border-bottom: none !important;
-                box-shadow: none !important;
-                background-clip: padding-box !important;
-                content: none !important;
-                display: block !important;
-                height: auto !important;
-            }
+        .section-card .card-body { border-top: none !important; box-shadow: none !important; }
+        .section-card hr { display: none !important; }
         .section-preview {
             width: 100%;
-                    min-height: 220px;
+            height: 220px;
             background: #fdfdfd;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            position: relative;
         }
+
+        /* ซ่อน scrollbar ของ gallery */
+        .section-file-gallery {
+            display: flex;
+            width: 100%;
+            height: 220px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            background: #f3f4f6;
+            scrollbar-width: none;       /* Firefox */
+            -ms-overflow-style: none;    /* IE/Edge */
+        }
+        .section-file-gallery::-webkit-scrollbar {
+            display: none;               /* Chrome/Safari */
+        }
+
+        .section-file-gallery-item {
+            flex: 0 0 100%;
+            min-width: 100%;
+            height: 220px;
+            scroll-snap-align: start;
+            overflow: hidden;
+        }
+        .section-preview-action,
+        .section-pdf-preview {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+            text-decoration: none;
+            background: #fdfdfd;
+            overflow: hidden;
+        }
+
+        /* ซ่อน scrollbar ของ iframe PDF */
+        .section-pdf-preview iframe {
+            overflow: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .section-pdf-preview iframe::-webkit-scrollbar {
+            display: none;
+        }
+
         .section-card-img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
         }
         .section-file-box {
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -183,8 +262,13 @@ function sectionActionLabel($fileName, $linkUrl) {
             text-align: center;
         }
         .section-file-box i {
-            font-size: 42px;
+            font-size: 64px;
             color: var(--dept-orange);
+        }
+        .section-file-box span {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6b7280;
         }
         .section-card .card-body {
             display: flex;
@@ -219,6 +303,51 @@ function sectionActionLabel($fileName, $linkUrl) {
             padding: 40px;
             text-align: center;
         }
+
+        /* ปุ่มเลื่อน gallery */
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.85);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
+            color: var(--dept-orange);
+            font-size: 16px;
+            padding: 0;
+        }
+        .gallery-nav.prev { left: 6px; }
+        .gallery-nav.next { right: 6px; }
+        .gallery-nav:hover { background: #fff; }
+        .gallery-dots {
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 5px;
+            z-index: 10;
+        }
+        .gallery-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid var(--dept-orange);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .gallery-dot.active {
+            background: var(--dept-orange);
+        }
     </style>
 </head>
 <body>
@@ -245,15 +374,22 @@ function sectionActionLabel($fileName, $linkUrl) {
     <?php else: ?>
         <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-4 justify-content-center">
             <?php foreach($items as $item):
-                $fileName = $item['file_name'] ?? '';
-                $linkUrl = $item['link_url'] ?? '';
-                $targetUrl = !empty($linkUrl) ? $linkUrl : (!empty($fileName) ? 'uploads/' . $fileName : '#');
-                $actionLabel = sectionActionLabel($fileName, $linkUrl);
+                $fileNames = parseSectionFiles($item['file_name'] ?? '');
+                $hasMultiple = count($fileNames) > 1;
             ?>
                 <div class="col">
                     <article class="card section-card h-100">
-                        <div class="section-preview">
-                            <?= renderSectionPreview($fileName) ?>
+                        <div class="section-preview" <?= $hasMultiple ? 'data-gallery="true"' : '' ?>>
+                            <?= renderSectionPreviews($fileNames) ?>
+                            <?php if ($hasMultiple): ?>
+                                <button class="gallery-nav prev" onclick="galleryMove(this, -1)"><i class="bi bi-chevron-left"></i></button>
+                                <button class="gallery-nav next" onclick="galleryMove(this, 1)"><i class="bi bi-chevron-right"></i></button>
+                                <div class="gallery-dots">
+                                    <?php for ($d = 0; $d < count($fileNames); $d++): ?>
+                                        <div class="gallery-dot <?= $d === 0 ? 'active' : '' ?>"></div>
+                                    <?php endfor; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body text-center">
                             <div class="section-card-title"><?= htmlspecialchars($item['title']) ?></div>
@@ -263,9 +399,6 @@ function sectionActionLabel($fileName, $linkUrl) {
                             <?php if(!empty($item['content'])): ?>
                                 <p class="text-muted mb-3" style="min-height: 60px;"><?= nl2br(htmlspecialchars($item['content'])) ?></p>
                             <?php endif; ?>
-                            <?php if($targetUrl !== '#'): ?>
-                                <a href="<?= htmlspecialchars($targetUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-section w-100"><?= htmlspecialchars($actionLabel) ?></a>
-                            <?php endif; ?>
                         </div>
                     </article>
                 </div>
@@ -274,6 +407,73 @@ function sectionActionLabel($fileName, $linkUrl) {
     <?php endif; ?>
 </main>
 
+<!-- Modal fullscreen preview -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered m-0">
+        <div class="modal-content border-0 rounded-0 position-relative" style="background:#000; width:100vw; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <div class="position-absolute" style="top:20px; right:25px; z-index:1060; display:flex; gap:24px; align-items:center;">
+                <a href="" id="modal-pdf-download" download class="text-white d-none" style="font-size:24px; text-decoration:none;" title="ดาวน์โหลด PDF">
+                    <i class="bi bi-download"></i>
+                </a>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter:invert(1) brightness(2); font-size:22px; opacity:0.85; margin:0; padding:0;"></button>
+            </div>
+            <div class="w-100 h-100 d-flex align-items-center justify-content-center p-2">
+                <iframe id="fullscreen-pdf" src="" style="width:100%; height:90vh; border:none; border-radius:4px;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// PDF modal
+document.addEventListener("DOMContentLoaded", function() {
+    const previewModalEl = document.getElementById('previewModal');
+    const previewModal = new bootstrap.Modal(previewModalEl);
+    const modalPdf = document.getElementById('fullscreen-pdf');
+    const downloadBtn = document.getElementById('modal-pdf-download');
+
+    document.querySelectorAll('.pdf-trigger').forEach(el => {
+        el.addEventListener('click', function() {
+            const src = this.getAttribute('data-src');
+            modalPdf.setAttribute('src', src);
+            downloadBtn.setAttribute('href', src);
+            downloadBtn.classList.remove('d-none');
+            previewModal.show();
+        });
+    });
+
+    previewModalEl.addEventListener('hidden.bs.modal', function() {
+        modalPdf.setAttribute('src', '');
+    });
+});
+
+function galleryMove(btn, dir) {
+    const preview = btn.closest('.section-preview');
+    const gallery = preview.querySelector('.section-file-gallery');
+    const dots = preview.querySelectorAll('.gallery-dot');
+    if (!gallery) return;
+
+    const itemWidth = gallery.offsetWidth;
+    const total = gallery.querySelectorAll('.section-file-gallery-item').length;
+    const current = Math.round(gallery.scrollLeft / itemWidth);
+    const next = Math.max(0, Math.min(total - 1, current + dir));
+
+    gallery.scrollTo({ left: next * itemWidth, behavior: 'smooth' });
+
+    dots.forEach((d, i) => d.classList.toggle('active', i === next));
+}
+
+// sync dots on scroll
+document.querySelectorAll('.section-file-gallery').forEach(gallery => {
+    gallery.addEventListener('scroll', () => {
+        const preview = gallery.closest('.section-preview');
+        const dots = preview.querySelectorAll('.gallery-dot');
+        const itemWidth = gallery.offsetWidth;
+        const current = Math.round(gallery.scrollLeft / itemWidth);
+        dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    }, { passive: true });
+});
+</script>
 </body>
 </html>

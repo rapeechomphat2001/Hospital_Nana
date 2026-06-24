@@ -1,8 +1,8 @@
 :root {
-    --hospital-orange: #f37021;
-    --hospital-orange-active: #d65c14;
-    --btn-edit-yellow: #ffb300;
-    --btn-delete-red: #dc3545;
+    --hospital-orange: #fd873e;
+    --hospital-orange-active: #fd873e;
+    --btn-edit-yellow: #ffc643;
+    --btn-delete-red: #df707b;
     
     /* สีปุ่มยกเลิกในกล่อง Modal (ขาว ขอบเทา ตัวหนังสือเทา) */
     --modal-btn-cancel-bg: #ffffff;
@@ -154,7 +154,6 @@ body { font-family: sans-serif; }
     border-radius: 6px;
     transition: all 0.2s ease;
 }
-/* เมื่อเมาส์ชี้: ถมสีเหลืองพาสเทลจาง ๆ (15%) เส้นขอบและตัวหนังสือสีเข้มตามรูป */
 .btn-outline-edit-style:hover {
     background-color: rgba(255, 179, 0, 0.15) !important;
     color: var(--btn-edit-yellow) !important;
@@ -171,7 +170,6 @@ body { font-family: sans-serif; }
     border-radius: 6px;
     transition: all 0.2s ease;
 }
-/* เมื่อเมาส์ชี้: ถมสีแดงพาสเทลจาง ๆ (12%) เส้นขอบและตัวหนังสือสีเข้มตามรูป */
 .btn-outline-delete-style:hover {
     background-color: rgba(220, 53, 69, 0.12) !important;
     color: var(--btn-delete-red) !important;
@@ -283,8 +281,8 @@ body { font-family: sans-serif; }
 
 
 :root {
-    --hosp-orange: #f37021;
-    --hosp-orange-dark: #cc5210;
+    --hosp-orange: #e78551;
+    --hosp-orange-dark: #bd7a43;
     --hosp-text-dark: #495057;
 }
 
@@ -339,13 +337,13 @@ body {
 .carousel-item {
     height: 420px;
     background-size: cover;
-    background-position: center 35%;
+    background-position: center top;
     position: relative;
 }
 .carousel-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(90deg, rgba(204, 82, 16, 0.9) 25%, rgba(243, 112, 33, 0.6) 60%, rgba(0, 0, 0, 0) 100%);
+    display: none !important;
+    background: none !important;
+    opacity: 0 !important;
 }
 .carousel-caption-custom {
     position: absolute;
@@ -448,7 +446,7 @@ body {
 }
 
 .badge-new {
-    background-color: #ff6f00 !important;
+    background-color: #f7a668 !important;
     color: white !important;
     font-size: 11px !important;
     padding: 2px 6px !important;
@@ -555,7 +553,7 @@ body {
     text-decoration: none;
 }
 .footer-copyright {
-    background-color: #913707;
+    background-color: rgb(150, 91, 59);
     padding: 12px 0;
     font-size: 13px;
 }
@@ -896,4 +894,3 @@ img {
         line-height: 1.5;
     }
 }
-

@@ -10,7 +10,6 @@ if (session_status() == PHP_SESSION_NONE) {
 $counter_file = 'visitor_counter.json';
 $today_date = date('Y-m-d');
 
-// ค่าเริ่มต้นกรณีไม่มีไฟล์บันทึก
 $counter_data = [
     'last_date' => $today_date,
     'today' => 0,
@@ -19,7 +18,6 @@ $counter_data = [
     'week_start_date' => date('Y-m-d', strtotime('monday this week'))
 ];
 
-// ถ้ามีไฟล์เดิมอยู่แล้ว ให้โหลดไฟล์มาอ่านค่า
 if (file_exists($counter_file)) {
     $json_content = file_get_contents($counter_file);
     $loaded_data = json_decode($json_content, true);
@@ -28,55 +26,58 @@ if (file_exists($counter_file)) {
     }
 }
 
-// เช็กและรีเซ็ตค่าหากเปลี่ยนวันใหม่
 if ($counter_data['last_date'] !== $today_date) {
     $counter_data['last_date'] = $today_date;
     $counter_data['today'] = 0;
 }
 
-// เช็กและรีเซ็ตค่ารายสัปดาห์หากข้ามไปสัปดาห์ใหม่
 $current_week_start = date('Y-m-d', strtotime('monday this week'));
 if ($counter_data['week_start_date'] !== $current_week_start) {
     $counter_data['week_start_date'] = $current_week_start;
     $counter_data['week'] = 0;
 }
 
-// นับเพิ่มยอดสถิติเฉพาะการเข้ามาดูครั้งแรกในเซสชันนั้นๆ (ป้องกันการกด Refresh รัวๆ)
 if (!isset($_SESSION['has_visited_hospital'])) {
     $_SESSION['has_visited_hospital'] = true;
     $counter_data['today']++;
     $counter_data['week']++;
     $counter_data['total']++;
-    
-    // บันทึกตัวเลขใหม่ลงในไฟล์ json เก็บไว้
     file_put_contents($counter_file, json_encode($counter_data, JSON_PRETTY_PRINT));
 }
 // =================================================================================
 
-// ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. เป็น พ.ศ. สไตล์ย่อ (เช่น 28 พ.ค. 69)
+// สร้างตาราง banners ถ้ายังไม่มี
+$conn->exec("CREATE TABLE IF NOT EXISTS banners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    subtitle TEXT NULL,
+    image_name VARCHAR(500) NULL,
+    link_url VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 1,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. เป็น พ.ศ. สไตล์ย่อ
 function dateToThaiShort($dateStr) {
     if (empty($dateStr) || $dateStr == '0000-00-00') return 'ไม่ระบุ';
     $time = strtotime($dateStr);
     if (!$time) return htmlspecialchars($dateStr);
-    
     $d = date('j', $time);
     $m = date('n', $time);
     $y = (date('Y', $time) + 543) % 100;
-    
     $months = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
     return "$d {$months[$m]} $y";
 }
 
-// ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. เป็น พ.ศ. แบบเต็มสำหรับกิจกรรม
+// ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. เป็น พ.ศ. แบบเต็ม
 function dateToThaiFull($dateStr) {
     if (empty($dateStr) || $dateStr == '0000-00-00') return 'ไม่ระบุวันที่';
     $time = strtotime($dateStr);
     if (!$time) return htmlspecialchars($dateStr);
-    
     $d = date('j', $time);
     $m = date('n', $time);
     $y = date('Y', $time) + 543;
-    
     $months = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
     return "$d {$months[$m]} $y";
 }
@@ -90,6 +91,25 @@ $event_list = $stmt_events->fetchAll(PDO::FETCH_ASSOC);
 
 $stmt_depts = $conn->query("SELECT * FROM departments ORDER BY id ASC");
 $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
+
+// ดึงข้อมูล Banner จาก MySQL
+$stmt_banners = $conn->query("SELECT * FROM banners WHERE is_active = 1 ORDER BY sort_order ASC, id ASC");
+$banner_list = $stmt_banners->fetchAll(PDO::FETCH_ASSOC);
+
+// Fallback ถ้าไม่มี Banner ในฐานข้อมูล
+$nature_imgs = [
+    "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=1920",
+    "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=1920",
+    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1920",
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1920"
+];
+$fallback_banners = [
+    ['title' => 'พัฒนาคุณภาพอย่างต่อเนื่อง',              'subtitle' => 'กลุ่มงานการพยาบาล โรงพยาบาลปากช่องนานา เพื่อสุขภาวะที่ดีของประชาชน', 'image_name' => '', 'link_url' => ''],
+    ['title' => 'บริการด้วยใจ ปลอดภัยได้มาตรฐาน',         'subtitle' => 'กลุ่มงานการพยาบาล โรงพยาบาลปากช่องนานา เพื่อสุขภาวะที่ดีของประชาชน', 'image_name' => '', 'link_url' => ''],
+    ['title' => 'ยกระดับการบริบาลผู้ป่วยอย่างอบอุ่น',     'subtitle' => 'กลุ่มงานการพยาบาล โรงพยาบาลปากช่องนานา เพื่อสุขภาวะที่ดีของประชาชน', 'image_name' => '', 'link_url' => ''],
+    ['title' => 'ก้าวสู่ความเป็นเลิศด้านการพยาบาลชุมชน', 'subtitle' => 'กลุ่มงานการพยาบาล โรงพยาบาลปากช่องนานา เพื่อสุขภาวะที่ดีของประชาชน', 'image_name' => '', 'link_url' => ''],
+];
+$slides = !empty($banner_list) ? $banner_list : $fallback_banners;
 ?>
 
 <!DOCTYPE html>
@@ -101,80 +121,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* ควบคุมสไตล์ Dropdown Menu สีส้มให้ตรงธีมโรงพยาบาล */
-        .dropdown-menu {
-            background-color: var(--hosp-orange) !important;
-            border: none !important;
-            border-radius: 0 0 6px 6px !important;
-            padding: 0 !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        .dropdown-item {
-            color: #ffffff !important;
-            font-size: 14px;
-            padding: 10px 20px !important;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-weight: 500;
-        }
-        .dropdown-item:last-child {
-            border-bottom: none;
-        }
-        .dropdown-item:hover {
-            background-color: var(--hosp-orange-dark) !important;
-        }
-        .dept-dropdown-menu {
-            width: 460px;
-            max-width: calc(100vw - 24px);
-            padding: 18px 22px !important;
-            column-count: 2;
-            column-gap: 42px;
-        }
-        .dept-dropdown-menu li {
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        .dept-dropdown-menu .dropdown-item {
-            border-bottom: none;
-            padding: 9px 14px !important;
-            white-space: nowrap;
-        }
-        @media (max-width: 575.98px) {
-            .dept-dropdown-menu {
-                width: calc(100vw - 16px);
-                column-gap: 18px;
-                padding: 12px 14px !important;
-            }
-            .dept-dropdown-menu .dropdown-item {
-                font-size: 13px;
-                padding: 8px 8px !important;
-            }
-        }
-        @media (min-width: 992px) {
-            .nav-item.dropdown:hover .dropdown-menu {
-                display: block;
-                margin-top: 0;
-            }
-        }
-
-        /* ใส่สี Hover ให้กับกิจกรรม */
-        .event-card:hover {
-            background-color: #fdf5ee;
-            transition: background-color 0.2s;
-        }
-
-        /* ใส่สี Hover ให้กับหอผู้ป่วย/หน่วยงาน */
-        .dept-link-node:hover {
-            background-color: #fdf5ee;
-            transition: background-color 0.2s;
-        }
-
-        /* ใส่สี Hover ให้กับลิงก์ที่เกี่ยวข้อง */
-        .link-grid-item:hover {
-            background-color: #fdf5ee;
-            transition: background-color 0.2s;
-        }
-    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
@@ -208,7 +155,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
         <div class="collapse navbar-collapse" id="navbarContent">
             <div class="navbar-nav">
                 <a class="nav-link active" href="#"><i class="bi bi-house-door-fill"></i> หน้าแรก</a>
-                
+
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="aboutDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         เกี่ยวกับกลุ่มงาน
@@ -217,7 +164,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                         <li><a class="dropdown-item" href="#"><i class="bi bi-eye-fill me-2"></i> วิสัยทัศน์ / พันธกิจ</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-diagram-3-fill me-2"></i> โครงสร้างองค์กร</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-people-fill me-2"></i> ทำเนียบผู้บริหาร</a></li>
-                       <li><a class="dropdown-item" href="service_profile.php"><i class="bi bi-file-earmark-person-fill me-2"></i> Service Profile</a></li>
+                        <li><a class="dropdown-item" href="service_profile.php"><i class="bi bi-file-earmark-person-fill me-2"></i> Service Profile</a></li>
                     </ul>
                 </div>
 
@@ -226,27 +173,26 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                         หอผู้ป่วย/หน่วยงาน
                     </a>
                     <ul class="dropdown-menu dept-dropdown-menu" aria-labelledby="deptDropdown">
-                    <?php if(empty($dept_list)): ?>
-                    <li><a class="dropdown-item" href="#">ไม่พบข้อมูล</a></li>
-                    <?php else: ?>
-                    <?php foreach($dept_list as $dept): 
-                // 💡 ปรับปรุง: ตัดคำว่า "งาน" ออกเพื่อให้สั้นกระชับตามเรฟ
-                $shortName = str_replace(['งาน', 'หน่วยงาน'], '', $dept['name']);
-                     ?>
-                    <li>
-                    <?php $deptUrl = !empty($dept['link_url']) ? $dept['link_url'] : 'department.php?id=' . (int)$dept['id']; ?>
-                    <a class="dropdown-item" href="<?= htmlspecialchars($deptUrl) ?>">
-                        <?= htmlspecialchars(trim($shortName)) ?>
-                    </a>
-                    </li>
-                        <?php endforeach; ?>
+                        <?php if(empty($dept_list)): ?>
+                            <li><a class="dropdown-item" href="#">ไม่พบข้อมูล</a></li>
+                        <?php else: ?>
+                            <?php foreach($dept_list as $dept):
+                                $shortName = str_replace(['งาน', 'หน่วยงาน'], '', $dept['name']);
+                            ?>
+                            <li>
+                                <?php $deptUrl = !empty($dept['link_url']) ? $dept['link_url'] : 'department.php?id=' . (int)$dept['id']; ?>
+                                <a class="dropdown-item" href="<?= htmlspecialchars($deptUrl) ?>">
+                                    <?= htmlspecialchars(trim($shortName)) ?>
+                                </a>
+                            </li>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </ul>
                 </div>
 
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        งานบริหาร 
+                        งานบริหาร
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                         <li><a class="dropdown-item" href="#">แผนงาน / โครงงาน</a></li>
@@ -257,7 +203,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
 
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="academicDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        งานวิชาการ 
+                        งานวิชาการ
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="academicDropdown">
                         <li><a class="dropdown-item" href="#">คลังความรู้ / KM</a></li>
@@ -265,12 +211,11 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                         <li><a class="dropdown-item" href="#">งานวิจัย / R2R</a></li>
                         <li><a class="dropdown-item" href="#">อบรม / สัมมนา</a></li>
                     </ul>
-                    
                 </div>
 
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="qualityDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        คุณภาพการพยาบาล 
+                        คุณภาพการพยาบาล
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="qualityDropdown">
                         <li><a class="dropdown-item" href="#">ตัวชี้วัดคุณภาพ (KPI)</a></li>
@@ -278,59 +223,48 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                         <li><a class="dropdown-item" href="#">IC / การป้องกันการติดเชื้อ</a></li>
                     </ul>
                 </div>
-            
+
                 <a class="nav-link" href="#">ติดต่อเรา</a>
             </div>
         </div>
     </div>
 </nav>
 
+<!-- ==================== HERO CAROUSEL (ดึงจากตาราง banners) ==================== -->
 <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
     <div class="carousel-indicators">
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
-        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="3"></button>
+        <?php foreach($slides as $i => $slide): ?>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<?= $i ?>" <?= $i === 0 ? 'class="active"' : '' ?>></button>
+        <?php endforeach; ?>
     </div>
 
     <div class="carousel-inner">
-        <?php 
-        for($i = 0; $i < 4; $i++): 
-            $isActive = ($i == 0) ? 'active' : '';
-            
-            if(isset($event_list[$i])) {
-                $slide_title = $event_list[$i]['title'];
-                $slide_desc = $event_list[$i]['content'];
-                $slide_img = 'uploads/' . $event_list[$i]['image_name'];
-                $slide_link = 'uploads/' . $event_list[$i]['image_name'];
+        <?php foreach($slides as $i => $slide):
+            $isActive = ($i === 0) ? 'active' : '';
+
+            // กำหนด background image
+            if (!empty($slide['image_name'])) {
+                $bgUrl  = 'uploads/' . htmlspecialchars($slide['image_name']);
+                $bgStyle = "background-image: url('{$bgUrl}');";
             } else {
-                $slide_titles = [
-                    "พัฒนาคุณภาพอย่างต่อเนื่อง",
-                    "บริการด้วยใจ ปลอดภัยได้มาตรฐาน",
-                    "ยกระดับการบริบาลผู้ป่วยอย่างอบอุ่น",
-                    "ก้าวสู่ความเป็นเลิศด้านการพยาบาลชุมชน"
-                ];
-                $slide_title = $slide_titles[$i];
-                $slide_desc = "กลุ่มงานการพยาบาล โรงพยาบาลปากช่องนานา เพื่อสุขภาวะที่ดีของประชาชน";
-                $nature_imgs = [
-                    "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=1920",
-                    "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=1920",
-                    "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1920",
-                    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1920"
-                ];
-                $slide_img = $nature_imgs[$i];
-                $slide_link = "#";
+                $bgStyle = "background-image: url('{$nature_imgs[$i % 4]}');";
             }
+
+            $slide_link  = !empty($slide['link_url'])  ? htmlspecialchars($slide['link_url'])  : '';
+            $slide_sub   = htmlspecialchars($slide['subtitle'] ?? '');
         ?>
-        <div class="carousel-item <?= $isActive ?>" style="background-image: url('<?= $slide_img ?>');">
+        <div class="carousel-item <?= $isActive ?>" style="<?= $bgStyle ?>">
             <div class="carousel-overlay"></div>
             <div class="carousel-caption-custom">
-                <h1 class="fw-bold mb-2 text-truncate" style="font-size: 38px; letter-spacing: 0.5px;"><?= htmlspecialchars($slide_title) ?></h1>
-                <p class="mb-4 text-truncate-2" style="font-size: 16px; opacity: 0.95;"><?= htmlspecialchars($slide_desc) ?></p>
-                <a href="<?= htmlspecialchars($slide_link) ?>" target="_blank" class="btn-readmore">อ่านเพิ่มเติม</a>
+                <?php if(!empty($slide_sub)): ?>
+                    <p class="mb-4" style="font-size: 16px; opacity: 0.95;"><?= $slide_sub ?></p>
+                <?php endif; ?>
+                <?php if(!empty($slide_link)): ?>
+                    <a href="<?= $slide_link ?>" target="_blank" class="btn-readmore">อ่านเพิ่มเติม</a>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endfor; ?>
+        <?php endforeach; ?>
     </div>
 
     <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
@@ -340,6 +274,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
         <span class="carousel-control-next-icon"></span>
     </button>
 </div>
+<!-- ========================================================================== -->
 
 <div class="vision-bar text-center">
     <div class="container">
@@ -372,7 +307,8 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
 
 <div class="container my-4">
     <div class="row g-4">
-        
+
+        <!-- ข่าวประชาสัมพันธ์ -->
         <div class="col-lg-4 col-md-6">
             <div class="block-header">
                 <span><i class="bi bi-megaphone-fill"></i> ข่าวประชาสัมพันธ์</span>
@@ -382,7 +318,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                 <?php if(empty($news_list)): ?>
                     <div class="text-muted text-center py-4">ไม่มีข้อมูลข่าวประชาสัมพันธ์</div>
                 <?php else: ?>
-                    <?php foreach($news_list as $news): 
+                    <?php foreach($news_list as $news):
                         $news_file = !empty($news['image_name']) ? $news['image_name'] : 'default.jpg';
                     ?>
                     <div class="news-item-row d-flex justify-content-between align-items-start gap-3">
@@ -402,16 +338,17 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
 
+        <!-- กิจกรรม -->
         <div class="col-lg-5 col-md-6">
             <div class="block-header">
                 <span><i class="bi bi-calendar3"></i> กิจกรรม</span>
-                <a href="#">ดูทั้งหมด ›</a>
+                <a href="all_events.php">ดูทั้งหมด ›</a>
             </div>
             <div class="border px-3 bg-white" style="border-top: none; min-height: 380px;">
                 <?php if(empty($event_list)): ?>
                     <div class="text-muted text-center py-4">ไม่มีข้อมูลกิจกรรม</div>
                 <?php else: ?>
-                    <?php foreach($event_list as $event): 
+                    <?php foreach($event_list as $event):
                         $event_file = !empty($event['image_name']) ? $event['image_name'] : 'default.jpg';
                     ?>
                     <div class="event-card">
@@ -424,7 +361,9 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                                     <?= htmlspecialchars($event['title']) ?>
                                 </a>
                             </div>
-                            <span class="text-muted small d-block" style="font-size: 11px; margin-top: 4px;"><i class="bi bi-calendar-event"></i> <?= dateToThaiFull($event['event_date']) ?></span>
+                            <span class="text-muted small d-block" style="font-size: 11px; margin-top: 4px;">
+                                <i class="bi bi-calendar-event"></i> <?= dateToThaiFull($event['event_date']) ?>
+                            </span>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -432,6 +371,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
 
+        <!-- หอผู้ป่วย / หน่วยงาน -->
         <div class="col-lg-3 col-md-12">
             <div class="block-header">
                 <span><i class="bi bi-building-fill"></i> หอผู้ป่วย / หน่วยงาน</span>
@@ -441,10 +381,9 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                     <?php if(empty($dept_list)): ?>
                         <div class="text-muted text-center py-4 w-100">ไม่มีข้อมูลหน่วยงาน</div>
                     <?php else: ?>
-                        <?php 
-                        $half = ceil(count($dept_list) / 2);
+                        <?php
+                        $half   = ceil(count($dept_list) / 2);
                         $chunks = array_chunk($dept_list, $half);
-                        
                         foreach($chunks as $chunk): ?>
                             <div class="col-6 px-2">
                                 <?php foreach($chunk as $dept): ?>
@@ -485,7 +424,7 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
         </div>
-        
+
         <div class="col-lg-4 col-md-11">
             <div class="block-header"><span><i class="bi bi-share-fill"></i> ติดตามเรา</span></div>
             <div class="border p-3 bg-white text-center d-flex flex-wrap justify-content-center gap-3 mb-4" style="border-top:none;">
@@ -494,13 +433,12 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
                 <a href="#" class="btn btn-sm btn-outline-success rounded"><i class="bi bi-line"></i> Line OA</a>
             </div>
 
-           <div class="block-header"><span><i class="bi bi-bar-chart-fill"></i> สถิติผู้เข้าชม</span></div>
-<div class="border p-3 bg-white mb-4" style="border-top:none; font-size: 14px;">
-    <div class="d-flex justify-content-between mb-1"><span>วันนี้</span><span class="fw-bold text-danger"><?= number_format($counter_data['today']) ?></span></div>
-    
-    <div class="d-flex justify-content-between mb-1"><span>สัปดาห์นี้</span><span class="fw-bold text-danger"><?= number_format($counter_data['week']) ?></span></div>
-    <div class="d-flex justify-content-between"><span>รวมทั้งหมด</span><span class="fw-bold text-danger"><?= number_format($counter_data['total']) ?></span></div>
-</div>
+            <div class="block-header"><span><i class="bi bi-bar-chart-fill"></i> สถิติผู้เข้าชม</span></div>
+            <div class="border p-3 bg-white mb-4" style="border-top:none; font-size: 14px;">
+                <div class="d-flex justify-content-between mb-1"><span>วันนี้</span><span class="fw-bold text-danger"><?= number_format($counter_data['today']) ?></span></div>
+                <div class="d-flex justify-content-between mb-1"><span>สัปดาห์นี้</span><span class="fw-bold text-danger"><?= number_format($counter_data['week']) ?></span></div>
+                <div class="d-flex justify-content-between"><span>รวมทั้งหมด</span><span class="fw-bold text-danger"><?= number_format($counter_data['total']) ?></span></div>
+            </div>
         </div>
     </div>
 </div>
@@ -540,23 +478,20 @@ $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 function updateThaiLiveClock() {
     const now = new Date();
     const days = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
     const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-    
-    const dayName = days[now.getDay()];
-    const dateNum = now.getDate();
+    const dayName   = days[now.getDay()];
+    const dateNum   = now.getDate();
     const monthName = months[now.getMonth()];
-    const thaiYear = now.getFullYear() + 543;
-    
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    
-    document.getElementById('liveClock').innerHTML = `วัน${dayName}ที่ ${dateNum} ${monthName} ${thaiYear} เวลา ${hours}:${minutes}:${seconds}`;
+    const thaiYear  = now.getFullYear() + 543;
+    const hours     = String(now.getHours()).padStart(2, '0');
+    const minutes   = String(now.getMinutes()).padStart(2, '0');
+    const seconds   = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('liveClock').innerHTML =
+        `วัน${dayName}ที่ ${dateNum} ${monthName} ${thaiYear} เวลา ${hours}:${minutes}:${seconds}`;
 }
 updateThaiLiveClock();
 setInterval(updateThaiLiveClock, 1000);

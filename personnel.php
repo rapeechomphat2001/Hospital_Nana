@@ -3,7 +3,6 @@ require_once 'connect.php';
 
 $dept_id = (int)($_GET['id'] ?? 0);
 
-// 1. ดึงข้อมูลชื่อกลุ่มงาน
 $stmt = $conn->prepare("SELECT * FROM departments WHERE id = :id");
 $stmt->execute([':id' => $dept_id]);
 $department = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -13,7 +12,6 @@ if (!$department) {
     die('ไม่พบข้อมูลกลุ่มงาน');
 }
 
-// 2. ดึงเฉพาะข้อมูลในหมวด "ทำเนียบบุคลากร" หรือ "personnel" ของกลุ่มงานนี้เท่านั้น
 $stmt = $conn->prepare("SELECT * FROM department_contents 
                         WHERE department_id = :department_id 
                         AND (section = 'personnel' OR section = 'ทำเนียบบุคลากร') 
@@ -23,14 +21,20 @@ $personnel_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function renderPersonnelImage($fileName) {
     if (empty($fileName)) {
-        return '<div class="no-avatar-box"><i class="bi bi-person-bounding-box"></i></div>';
+        return '<div class="personnel-image-box"><div class="no-avatar-box"><i class="bi bi-person-bounding-box"></i></div></div>';
     }
 
     $safeFile = htmlspecialchars($fileName);
     $path = 'uploads/' . $safeFile;
-    return '<div class="personnel-image-box">
-                <img src="' . $path . '" class="card-img-top personnel-card-img" alt="บุคลากร">
-            </div>';
+    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+        return '<div class="personnel-image-box">
+                    <img src="' . $path . '" class="personnel-card-img img-trigger" alt="บุคลากร" data-src="' . $path . '" style="cursor:pointer;">
+                </div>';
+    }
+
+    return '<div class="personnel-image-box"><div class="no-avatar-box"><i class="bi bi-person-bounding-box"></i></div></div>';
 }
 ?>
 
@@ -42,96 +46,8 @@ function renderPersonnelImage($fileName) {
     <title>ทำเนียบบุคลากร <?= htmlspecialchars($department['name']) ?> - โรงพยาบาลปากช่องนานา</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --dept-orange: #d96f18;
-            --dept-orange-dark: #b95b0f;
-            --dept-bg: #fcf8f5;
-            --dept-text: #2d3748;
-        }
-        body {
-            background: var(--dept-bg);
-            color: var(--dept-text);
-            font-family: 'Sarabun', 'Kanit', Arial, sans-serif;
-        }
-        .navbar-custom {
-            background: var(--dept-orange);
-            box-shadow: 0 2px 8px rgba(0,0,0,.12);
-        }
-        .navbar-custom .navbar-brand {
-            color: #fff;
-            font-weight: 600;
-        }
-        .hero-section {
-            background: var(--dept-orange);
-            color: #fff;
-            padding: 60px 16px 70px;
-            border-radius: 0 0 56px 56px;
-            text-align: center;
-            margin-bottom: 48px;
-        }
-        .hero-section h1 {
-            font-size: clamp(28px, 4vw, 48px);
-            font-weight: 700;
-        }
-        .personnel-card {
-            border: 0;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 14px rgba(0,0,0,.06);
-            background: #fff;
-            transition: transform 0.2s ease;
-        }
-        .personnel-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        /* สไตล์กล่องรูปภาพเจ้าหน้าที่ ให้แสดงรูปเต็มใบ ไม่ตัดขอบหัวขาด */
-        .personnel-image-box {
-            width: 100%;
-            height: 320px;
-            background: #fdfdfd;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            border-bottom: 1px solid #f1f1f1;
-        }
-        .personnel-card-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* รูปภาพเต็ม ไม่โดนบีบสัดส่วนบุคคล */
-        }
-        .no-avatar-box {
-            width: 100%;
-            height: 320px;
-            background: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #9ca3af;
-        }
-        .no-avatar-box i {
-            font-size: 64px;
-        }
-        .btn-back {
-            color: var(--dept-orange);
-            border-color: var(--dept-orange);
-            font-weight: 600;
-        }
-        .btn-back:hover {
-            background: var(--dept-orange);
-            color: #fff;
-        }
-        .empty-section {
-            background: #fff;
-            border: 1px dashed #e1b083;
-            border-radius: 8px;
-            color: #8a6a50;
-            padding: 40px;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="personnel.css">
 </head>
 <body>
 
@@ -158,14 +74,9 @@ function renderPersonnelImage($fileName) {
             ?>
                 <div class="col">
                     <article class="card personnel-card text-center h-100">
-                        <!-- แสดงรูปภาพบุคลากร -->
                         <?= renderPersonnelImage($fileName) ?>
-                        
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <!-- แสดงชื่อ-นามสกุล -->
+                        <div class="card-body">
                             <h5 class="card-title fw-bold text-dark mb-1"><?= htmlspecialchars($item['title']) ?></h5>
-                            
-                            <!-- แสดงตำแหน่ง (ถ้ามีระบุในรายละเอียด) -->
                             <?php if(!empty($item['content'])): ?>
                                 <p class="card-text text-muted small mb-0"><?= nl2br(htmlspecialchars($item['content'])) ?></p>
                             <?php endif; ?>
@@ -175,12 +86,81 @@ function renderPersonnelImage($fileName) {
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    
-    <div class="text-center mt-5">
-        <a href="department.php?id=<?= $dept_id ?>" class="btn btn-back px-4 py-2"><i class="bi bi-house-door"></i> กลับหน้าหลักกลุ่มงาน</a>
-    </div>
 </main>
 
+<!-- Modal fullscreen preview -->
+<div class="modal fade modal-fullscreen-preview" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered m-0">
+        <div class="modal-content border-0 rounded-0 position-relative" style="background:#000; width:100vw; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <div class="position-absolute" style="top:20px; right:25px; z-index:1060; display:flex; gap:24px; align-items:center;">
+                <a href="" id="modal-image-download" download class="text-white" style="font-size:24px; text-decoration:none;" title="ดาวน์โหลดรูปภาพ">
+                    <i class="bi bi-download"></i>
+                </a>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter:invert(1) brightness(2); font-size:22px; opacity:0.85; margin:0; padding:0;"></button>
+            </div>
+            <button type="button" id="modal-prev-btn" class="btn position-absolute d-none" style="left:30px; top:50%; transform:translateY(-50%); z-index:1055; border:none; background:rgba(45,45,45,0.7); color:white; width:55px; height:55px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div class="w-100 h-100 d-flex align-items-center justify-content-center p-4">
+                <img id="fullscreen-image" src="" class="img-fluid" style="max-height:85vh; max-width:90%; object-fit:contain; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+            </div>
+            <button type="button" id="modal-next-btn" class="btn position-absolute d-none" style="right:30px; top:50%; transform:translateY(-50%); z-index:1055; border:none; background:rgba(45,45,45,0.7); color:white; width:55px; height:55px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const previewModalEl = document.getElementById('previewModal');
+    const previewModal = new bootstrap.Modal(previewModalEl);
+    const modalImg = document.getElementById('fullscreen-image');
+    const downloadBtn = document.getElementById('modal-image-download');
+    const prevBtn = document.getElementById('modal-prev-btn');
+    const nextBtn = document.getElementById('modal-next-btn');
+
+    let currentIdx = 0;
+    const imageElements = Array.from(document.querySelectorAll('.img-trigger'));
+
+    function openViewer(index) {
+        currentIdx = index;
+        if (imageElements.length > 1) {
+            prevBtn.classList.remove('d-none');
+            nextBtn.classList.remove('d-none');
+        }
+        updateImage();
+        previewModal.show();
+    }
+
+    function updateImage() {
+        const src = imageElements[currentIdx].getAttribute('data-src');
+        modalImg.setAttribute('src', src);
+        downloadBtn.setAttribute('href', src);
+    }
+
+    imageElements.forEach((img, i) => img.addEventListener('click', () => openViewer(i)));
+
+    nextBtn.addEventListener('click', () => {
+        currentIdx = (currentIdx + 1) % imageElements.length;
+        updateImage();
+    });
+    prevBtn.addEventListener('click', () => {
+        currentIdx = (currentIdx - 1 + imageElements.length) % imageElements.length;
+        updateImage();
+    });
+
+    document.addEventListener('keydown', e => {
+        if (!previewModalEl.classList.contains('show')) return;
+        if (e.key === 'ArrowRight') nextBtn.click();
+        if (e.key === 'ArrowLeft') prevBtn.click();
+    });
+
+    previewModalEl.addEventListener('hidden.bs.modal', () => {
+        modalImg.setAttribute('src', '');
+    });
+});
+</script>
 </body>
 </html>

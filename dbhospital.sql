@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `department_contents` (
   `section` varchar(50) NOT NULL,
   `title` varchar(255) NOT NULL,
   `content` text,
-  `file_name` varchar(255) DEFAULT NULL,
+  `file_name` text,
   `link_url` varchar(500) DEFAULT NULL,
   `sort_order` int NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,

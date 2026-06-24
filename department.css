@@ -1,0 +1,303 @@
+/* ===================================================
+   department.css — สไตล์เฉพาะหน้ากลุ่มงาน (department.php)
+   ใช้คู่กับ style.css (โหลด style.css ก่อนเสมอ)
+   =================================================== */
+
+:root {
+            --dept-orange: #e78551;
+            --dept-orange-dark: #b86c2e;
+            --dept-bg: #fcf8f5;
+            --dept-text: #2d3748;
+        }
+body {
+    background: var(--dept-bg);
+    color: var(--dept-text);
+    font-family: 'Sarabun', 'Kanit', Arial, sans-serif;
+}
+
+/* Navbar */
+.navbar-custom {
+    background: var(--dept-orange);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+.navbar-custom .navbar-brand,
+.navbar-custom .nav-link {
+    color: #fff;
+    font-weight: 600;
+}
+.navbar-custom .nav-link:hover {
+    color: #ffe1c4;
+}
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, .65);
+}
+.navbar-toggler-icon {
+    filter: invert(1) grayscale(1) brightness(2);
+}
+
+/* Hero */
+.hero-section {
+    background: var(--dept-orange);
+    color: #fff;
+    padding: 80px 16px 90px;
+    border-radius: 0 0 56px 56px;
+    text-align: center;
+    margin-bottom: 48px;
+}
+.hero-section h1 {
+    font-size: clamp(34px, 5vw, 64px);
+    line-height: 1.15;
+    font-weight: 700;
+}
+
+/* Section title */
+.section-title {
+    color: var(--dept-orange);
+    font-weight: 700;
+    text-align: center;
+    margin: 34px 0 24px;
+}
+
+/* Department Card */
+.dept-card {
+    border: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 100%;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+}
+.dept-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem;
+    flex: 1;
+}
+
+/* Placeholder เมื่อไม่มีไฟล์ */
+.dept-no-file-box {
+    width: 100%;
+    height: 220px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.dept-no-file-box i {
+    font-size: 56px;
+    color: #d1d5db;
+}
+
+/* Image preview box */
+.image-preview-box {
+    width: 100%;
+    height: 220px;
+    background: #fdfdfd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-bottom: none;
+}
+.image-preview-box img.dept-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* File gallery */
+.dept-file-gallery {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    background: transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.dept-file-gallery::-webkit-scrollbar {
+    display: none;
+}
+.dept-file-gallery-item {
+    flex: 0 0 100%;
+    min-width: 100%;
+    scroll-snap-align: start;
+    overflow: hidden;
+}
+.dept-file-gallery-item .image-preview-box,
+.dept-file-gallery-item .dept-card-img,
+.dept-file-gallery-item .dept-file-box,
+.dept-file-gallery-item .pdf-container {
+    height: 220px !important;
+}
+
+/* File download link */
+.dept-file-download {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+.dept-file-download:hover .dept-file-box {
+    background: #eef0f3;
+}
+
+/* Card image */
+.dept-card-img {
+    height: 220px;
+    object-fit: cover;
+    background: #f1f1f1;
+}
+video.dept-card-img {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: #000;
+}
+
+/* File placeholder box */
+.dept-file-box {
+    height: 220px;
+    min-height: 120px;
+    background: #f3f4f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #6b7280;
+    padding: 12px;
+    text-align: center;
+    overflow: hidden;
+}
+.dept-file-box i {
+    font-size: 64px;
+    color: var(--dept-orange);
+}
+.dept-file-box .file-ext {
+    font-size: 16px;
+    font-weight: 700;
+    color: #374151;
+    margin-top: 4px;
+}
+
+/* PDF iframe scrollbar hidden */
+.pdf-container iframe {
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.pdf-container iframe::-webkit-scrollbar {
+    display: none;
+}
+
+/* Meta text */
+.section-card-meta {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+}
+
+/* Outline button */
+.btn-outline-custom {
+    color: var(--dept-orange);
+    border-color: var(--dept-orange);
+    font-weight: 600;
+}
+.btn-outline-custom:hover {
+    background: var(--dept-orange);
+    color: #fff;
+}
+
+/* Empty state */
+.empty-section {
+    background: #fff;
+    border: 1px dashed #e1b083;
+    border-radius: 8px;
+    color: #8a6a50;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Gallery navigation buttons */
+.dept-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+    color: var(--dept-orange);
+    font-size: 16px;
+    padding: 0;
+}
+.dept-gallery-nav.prev { left: 6px; }
+.dept-gallery-nav.next { right: 6px; }
+.dept-gallery-nav:hover { background: #fff; }
+
+/* Gallery dots */
+.dept-gallery-dots {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 10;
+}
+.dept-gallery-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--dept-orange);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dept-gallery-dot.active {
+    background: var(--dept-orange);
+}
+
+/* Fullscreen modal */
+.modal-fullscreen-preview .modal-content {
+    background: #000000 !important;
+    border: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.modal-fullscreen-preview .btn-close {
+    filter: invert(1) brightness(2);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .hero-section {
+        padding: 58px 16px 68px;
+        border-radius: 0 0 34px 34px;
+    }
+    .image-preview-box {
+        height: 220px;
+    }
+    .dept-card-img,
+    .dept-file-box {
+        height: 180px;
+    }
+    .dept-file-gallery-item .image-preview-box,
+    .dept-file-gallery-item .dept-card-img,
+    .dept-file-gallery-item .dept-file-box,
+    .dept-file-gallery-item .pdf-container {
+        height: 180px !important;
+    }
+}
