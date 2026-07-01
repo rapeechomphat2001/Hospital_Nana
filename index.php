@@ -147,7 +147,7 @@ $slides = !empty($banner_list) ? $banner_list : $fallback_banners;
     </div>
 </div>
 
-<nav class="navbar navbar-expand-lg main-nav p-0 sticky-top shadow-sm">
+<nav class="navbar navbar-expand-lg main-nav p-0 shadow-sm" id="mainNav">
     <div class="container">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="เปิดเมนู">
             <span class="navbar-toggler-icon"></span>
@@ -309,10 +309,10 @@ $slides = !empty($banner_list) ? $banner_list : $fallback_banners;
     <div class="row g-4">
 
         <!-- ข่าวประชาสัมพันธ์ -->
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-9 col-md-12">
             <div class="block-header">
                 <span><i class="bi bi-megaphone-fill"></i> ข่าวประชาสัมพันธ์</span>
-                <a href="#">ดูทั้งหมด ›</a>
+                <a href="all_news.php">ดูทั้งหมด ›</a>
             </div>
             <div class="border p-2 bg-white" style="border-top: none; min-height: 380px;">
                 <?php if(empty($news_list)): ?>
@@ -324,47 +324,14 @@ $slides = !empty($banner_list) ? $banner_list : $fallback_banners;
                     <div class="news-item-row d-flex justify-content-between align-items-start gap-3">
                         <div class="flex-grow-1">
                             <i class="bi bi-chevron-right small me-1" style="color: var(--hosp-orange) !important;"></i>
-                            <a href="uploads/<?= htmlspecialchars($news_file) ?>" target="_blank" class="text-decoration-none align-middle">
+                            <a href="news_detail.php?id=<?= (int)$news['id'] ?>" class="text-decoration-none align-middle">
                                 <?= htmlspecialchars($news['title']) ?>
                             </a>
                             <?php if(isset($news['is_new']) && (int)$news['is_new'] === 1): ?>
-                                <span class="badge-new ms-1 align-middle">ใหม่</span>
+                                <span class="badge-new ms-1 align-middle"><i class="bi bi-stars me-1"></i> ใหม่</span>
                             <?php endif; ?>
                         </div>
                         <span class="text-muted small text-end flex-shrink-0 pt-1" style="width: 75px; font-weight: 500;"><?= dateToThaiShort($news['created_at']) ?></span>
-                    </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- กิจกรรม -->
-        <div class="col-lg-5 col-md-6">
-            <div class="block-header">
-                <span><i class="bi bi-calendar3"></i> กิจกรรม</span>
-                <a href="all_events.php">ดูทั้งหมด ›</a>
-            </div>
-            <div class="border px-3 bg-white" style="border-top: none; min-height: 380px;">
-                <?php if(empty($event_list)): ?>
-                    <div class="text-muted text-center py-4">ไม่มีข้อมูลกิจกรรม</div>
-                <?php else: ?>
-                    <?php foreach($event_list as $event):
-                        $event_file = !empty($event['image_name']) ? $event['image_name'] : 'default.jpg';
-                    ?>
-                    <div class="event-card">
-                        <a href="uploads/<?= htmlspecialchars($event_file) ?>" target="_blank">
-                            <img src="uploads/<?= htmlspecialchars($event_file) ?>" onerror="this.src='https://placehold.co/100x75?text=No+Image'">
-                        </a>
-                        <div class="flex-grow-1">
-                            <div class="event-card-title">
-                                <a href="uploads/<?= htmlspecialchars($event_file) ?>" target="_blank">
-                                    <?= htmlspecialchars($event['title']) ?>
-                                </a>
-                            </div>
-                            <span class="text-muted small d-block" style="font-size: 11px; margin-top: 4px;">
-                                <i class="bi bi-calendar-event"></i> <?= dateToThaiFull($event['event_date']) ?>
-                            </span>
-                        </div>
                     </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -412,14 +379,14 @@ $slides = !empty($banner_list) ? $banner_list : $fallback_banners;
             <div class="link-grid-box mb-4">
                 <div class="row g-0">
                     <div class="col-6 border-end">
-                        <div class="link-grid-item"><i class="bi bi-shield-check text-warning me-2"></i><a href="#" target="_blank">สภาการพยาบาล</a></div>
-                        <div class="link-grid-item"><i class="bi bi-mortarboard-fill text-warning me-2"></i><a href="#" target="_blank">ระบบสืบค้น CPG</a></div>
-                        <div class="link-grid-item"><i class="bi bi-tablet-landscape text-warning me-2"></i><a href="#" target="_blank">ระบบ HIS</a></div>
+                        <div class="link-grid-item"><i class="bi bi-shield-check text-warning me-2"></i><a href="https://www.tnmc.or.th/">สภาการพยาบาล</a></div>
+                        <div class="link-grid-item"><i class="bi bi-mortarboard-fill text-warning me-2"></i><a href="https://cpg.dms.go.th/" >ระบบสืบค้น CPG</a></div>
+                        <div class="link-grid-item"><i class="bi bi-tablet-landscape text-warning me-2"></i><a href="https://www.ckdoctor.com/?gad_source=1&gad_campaignid=21980229015&gbraid=0AAAAAD1H3YMu4xNuCAv4r1kzu7EDC09jH&gclid=Cj0KCQjwr4jSBhCSARIsAOX1E-IiNEXscz-aLco7ZjmCCFGS4J8SUO5D9ZsC95fT6HW7KfrGGNjY8HgaAt8tEALw_wcB">ระบบ HIS</a></div>
                     </div>
                     <div class="col-6">
-                        <div class="link-grid-item"><i class="bi bi-heart-pulse-fill text-danger me-2"></i><a href="#" target="_blank">กรมการแพทย์</a></div>
-                        <div class="link-grid-item"><i class="bi bi-bar-chart-line-fill text-warning me-2"></i><a href="#" target="_blank">รายงาน KPI</a></div>
-                        <div class="link-grid-item"><i class="bi bi-file-earmark-medical-fill text-warning me-2"></i><a href="#" target="_blank">คลังความรู้ KM</a></div>
+                        <div class="link-grid-item"><i class="bi bi-heart-pulse-fill text-danger me-2"></i><a href="https://www.dms.go.th/?StartWeb=1">กรมการแพทย์</a></div>
+                        <div class="link-grid-item"><i class="bi bi-bar-chart-line-fill text-warning me-2"></i><a href="https://spd.moph.go.th/kpi-template-%E0%B8%95%E0%B8%B1%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%A3%E0%B8%B0%E0%B8%97%E0%B8%A3%E0%B8%A7%E0%B8%87%E0%B8%AA%E0%B8%B2%E0%B8%98%E0%B8%B2/" >รายงาน KPI</a></div>
+                        <div class="link-grid-item"><i class="bi bi-file-earmark-medical-fill text-warning me-2"></i><a href="https://intranet.dla.go.th/km/km.do">คลังความรู้ KM</a></div>
                     </div>
                 </div>
             </div>
@@ -462,10 +429,10 @@ $slides = !empty($banner_list) ? $banner_list : $fallback_banners;
             <div class="col-md-4">
                 <h5><i class="bi bi-link-45deg"></i> ลิงก์ที่เกี่ยวข้อง</h5>
                 <ul class="small opacity-80">
-                    <li><i class="bi bi-chevron-right"></i> <a href="#">กระทรวงสาธารณสุข</a></li>
-                    <li><i class="bi bi-chevron-right"></i> <a href="#">สภาการพยาบาล</a></li>
-                    <li><i class="bi bi-chevron-right"></i> <a href="#">กรมการแพทย์</a></li>
-                    <li><i class="bi bi-chevron-right"></i> <a href="#">สรพ. (HA)</a></li>
+                    <li><i class="bi bi-chevron-right"></i> <a href="https://moph.go.th/">กระทรวงสาธารณสุข</a></li>
+                    <li><i class="bi bi-chevron-right"></i> <a href="https://www.tnmc.or.th/">สภาการพยาบาล</a></li>
+                    <li><i class="bi bi-chevron-right"></i> <a href="https://www.dms.go.th/?StartWeb=1">กรมการแพทย์</a></li>
+                    <li><i class="bi bi-chevron-right"></i> <a href="https://www.ha.or.th/TH/Home/%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81">สรพ. (HA)</a></li>
                 </ul>
             </div>
         </div>
@@ -495,6 +462,65 @@ function updateThaiLiveClock() {
 }
 updateThaiLiveClock();
 setInterval(updateThaiLiveClock, 1000);
+
+// Scroll to top
+window.addEventListener('scroll', function() {
+    document.getElementById('scrollTopBtn').classList.toggle('show', window.scrollY > 300);
+}, { passive: true });
+
+// Sticky navbar (workaround for overflow-x:hidden on body)
+(function() {
+    const nav = document.getElementById('mainNav');
+    if (!nav) return;
+    const navTop = nav.getBoundingClientRect().top + window.scrollY;
+    const navH   = nav.offsetHeight;
+
+    function handleScroll() {
+        if (window.scrollY >= navTop) {
+            nav.style.cssText = 'position:fixed;top:0;left:0;right:0;width:100%;z-index:1040;';
+            document.body.style.paddingTop = navH + 'px';
+        } else {
+            nav.style.cssText = '';
+            document.body.style.paddingTop = '';
+        }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+})();
 </script>
+
+<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="กลับด้านบน">
+    <i class="bi bi-chevron-up"></i>
+</button>
+<style>
+#scrollTopBtn {
+    position: fixed;
+    bottom: 28px;
+    right: 24px;
+    z-index: 9999;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: none;
+    background: var(--hosp-orange);
+    color: #fff;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+}
+#scrollTopBtn.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+#scrollTopBtn:hover { background: var(--hosp-orange-dark); }
+</style>
 </body>
 </html>

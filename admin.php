@@ -36,14 +36,14 @@ function parseFileNames($fileData) {
 }
 
 $department_content_sections = [
-    'knowledge'       => 'ข่าวประชาสัมพันธ์และเกร็ดความรู้',
+    'knowledge'       => 'ข่าวประชาสัมพันธ์ / เกร็ดความรู้',
+    'structure'       => 'โครงสร้างการบริหารงาน',
     'personnel'       => 'ทำเนียบบุคลากร',
+    'service'         => 'การให้บริการต่างๆ',
     'service_profile' => 'Service Profile',
     'indicator'       => 'ตัวชี้วัด',
-    'structure'       => 'โครงสร้างการบริหารงาน',
-    'service'         => 'การให้บริการต่างๆ',
-    'academic'        => 'ผลงานวิจัย',
-    'wi'              => 'WI'
+    'academic'        => 'ผลงานวิจัย / วิชาการ',
+    'wi'              => 'WI / SP'
 ];
 
 // สร้างตาราง department_contents ถ้ายังไม่มี
@@ -139,27 +139,7 @@ if (isset($_GET['del_news'])) {
     header("Location: admin.php?tab=news"); exit;
 }
 
-// [2] กิจกรรม (events)
-if (isset($_POST['action_event'])) {
-    $file_name  = uploadMultipleAdminFiles('image', 'event', $_POST['old_image'] ?? 'default.jpg');
-    $event_date = !empty($_POST['event_date']) ? $_POST['event_date'] : date('Y-m-d');
-    $link_url   = !empty($_POST['link_url']) ? $_POST['link_url'] : null;
-
-    if ($_POST['action_event'] == 'create') {
-        $stmt = $conn->prepare("INSERT INTO events (title, content, event_date, image_name, link_url) VALUES (:title, :content, :event_date, :image_name, :link_url)");
-        $stmt->execute([':title' => $_POST['title'], ':content' => $_POST['content'] ?? '', ':event_date' => $event_date, ':image_name' => $file_name, ':link_url' => $link_url]);
-    } elseif ($_POST['action_event'] == 'update') {
-        $stmt = $conn->prepare("UPDATE events SET title=:title, content=:content, event_date=:event_date, image_name=:image_name, link_url=:link_url WHERE id=:id");
-        $stmt->execute([':title' => $_POST['title'], ':content' => $_POST['content'] ?? '', ':event_date' => $event_date, ':image_name' => $file_name, ':link_url' => $link_url, ':id' => $_POST['id']]);
-    }
-    header("Location: admin.php?tab=events"); exit;
-}
-if (isset($_GET['del_event'])) {
-    $conn->prepare("DELETE FROM events WHERE id=:id")->execute([':id' => $_GET['del_event']]);
-    header("Location: admin.php?tab=events"); exit;
-}
-
-// [3] หน่วยงาน (departments)
+// [2] หน่วยงาน (departments)
 if (isset($_POST['action_dept'])) {
     $link_url = !empty($_POST['link_url']) ? $_POST['link_url'] : null;
     if ($_POST['action_dept'] == 'create') {
@@ -175,7 +155,7 @@ if (isset($_GET['del_dept'])) {
     header("Location: admin.php?tab=departments"); exit;
 }
 
-// [4] ข้อมูลรายกลุ่มงาน (dept_contents)
+// [3] ข้อมูลรายกลุ่มงาน (dept_contents)
 if (isset($_POST['action_dept_content'])) {
     $department_id = (int)($_POST['department_id'] ?? 0);
     $section       = $_POST['section'] ?? 'knowledge';
@@ -198,7 +178,7 @@ if (isset($_GET['del_dept_content'])) {
     header("Location: admin.php?tab=dept_contents&dept_id=" . $department_id); exit;
 }
 
-// [5] Banner / Slider
+// [4] Banner / Slider
 if (isset($_POST['action_banner'])) {
     $file_name  = uploadAdminFile('banner_image', 'banner', $_POST['old_image'] ?? '');
     $is_active  = isset($_POST['is_active']) ? 1 : 0;
@@ -221,7 +201,6 @@ if (isset($_GET['del_banner'])) {
 
 // ==================== FETCH DATA ====================
 $news_items         = [];
-$event_items        = [];
 $dept_items         = [];
 $dept_content_items = [];
 $banner_items       = [];
@@ -231,8 +210,6 @@ $selected_dept_id = (int)($_GET['dept_id'] ?? ($all_depts[0]['id'] ?? 0));
 
 if ($active_tab == 'news') {
     $news_items = $conn->query("SELECT * FROM news ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-} elseif ($active_tab == 'events') {
-    $event_items = $conn->query("SELECT * FROM events ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 } elseif ($active_tab == 'departments') {
     $dept_items = $conn->query("SELECT * FROM departments ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 } elseif ($active_tab == 'dept_contents' && $selected_dept_id > 0) {
@@ -253,68 +230,7 @@ if ($active_tab == 'news') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .dept-content-scroll {
-            max-height: 520px;
-            overflow: auto;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background: #fff;
-        }
-        .dept-content-scroll .dept-content-table {
-            display: table !important;
-            table-layout: fixed !important;
-            width: 100% !important;
-            min-width: 900px;
-            margin-bottom: 0 !important;
-            white-space: normal !important;
-        }
-        .dept-content-scroll thead th {
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            background: #fff;
-            box-shadow: inset 0 -1px 0 #dee2e6;
-        }
-        .dept-content-table th,
-        .dept-content-table td { white-space: normal !important; vertical-align: middle; }
-        .dept-content-table .col-section { width: 22%; }
-        .dept-content-table .col-title   { width: 25%; }
-        .dept-content-table .col-file    { width: 35%; }
-        .dept-content-table .col-order   { width: 7%;  }
-        .dept-content-table .col-action  { width: 11%; }
-        .dept-content-section-badge {
-            display: inline-block;
-            max-width: 220px;
-            white-space: normal;
-            line-height: 1.35;
-            text-align: left;
-            word-break: break-word;
-        }
-        .dept-content-file-cell { overflow: hidden; }
-        .admin-file-link {
-            display: grid;
-            grid-template-columns: 18px minmax(0, 1fr);
-            align-items: center;
-            gap: 8px;
-            max-width: 100%;
-        }
-        .admin-file-link a {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* Banner preview thumbnail */
-        .banner-thumb {
-            width: 100px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-        }
-    </style>
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body class="bg-light">
 
@@ -328,11 +244,6 @@ if ($active_tab == 'news') {
         <li class="nav-item">
             <a class="nav-link <?= $active_tab == 'news' ? 'active' : '' ?>" href="?tab=news">
                 <i class="bi bi-megaphone-fill fs-5 icon-news"></i> ข่าวประชาสัมพันธ์
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link <?= $active_tab == 'events' ? 'active' : '' ?>" href="?tab=events">
-                <i class="bi bi-calendar3 fs-5 icon-events"></i> กิจกรรม
             </a>
         </li>
         <li class="nav-item">
@@ -354,7 +265,6 @@ if ($active_tab == 'news') {
 
     <div class="tab-content bg-white p-4 border rounded-bottom shadow-sm">
 
-        <!-- ==================== TAB: NEWS ==================== -->
         <?php if($active_tab == 'news'): ?>
         <div>
             <h5 class="text-hospital mb-3 fw-bold">จัดการข่าวประชาสัมพันธ์</h5>
@@ -426,67 +336,6 @@ if ($active_tab == 'news') {
         </div>
         <?php endif; ?>
 
-        <!-- ==================== TAB: EVENTS ==================== -->
-        <?php if($active_tab == 'events'): ?>
-        <div>
-            <h5 class="text-hospital mb-3 fw-bold">จัดการกิจกรรม</h5>
-            <form action="admin.php?tab=events" method="POST" enctype="multipart/form-data" class="admin-form-container">
-                <input type="hidden" name="action_event" value="create">
-                <div class="row g-2 mb-2">
-                    <div class="col-md-5"><input type="text" name="title" class="form-control" placeholder="ชื่อกิจกรรม" required></div>
-                    <div class="col-md-3"><input type="text" name="event_date" id="event_date_picker" class="form-control bg-white" placeholder="เลือกวันที่จัดกิจกรรม พ.ศ." required></div>
-                    <div class="col-md-4"><input type="file" name="image[]" class="form-control" accept="image/*,application/pdf" multiple></div>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-12"><input type="url" name="link_url" class="form-control" placeholder="ลิงก์หน้ากิจกรรมเพิ่มเติมภายนอก"></div>
-                </div>
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-10">
-                        <textarea name="content" class="form-control" rows="2" placeholder="กรอกเนื้อหากิจกรรมแบบละเอียด..."></textarea>
-                    </div>
-                    <div class="col-md-2 text-end">
-                        <button type="submit" class="btn btn-hospital-orange w-100">+ เพิ่มกิจกรรม</button>
-                    </div>
-                </div>
-            </form>
-
-            <table class="table table-striped align-middle mt-4">
-                <thead><tr><th>ไฟล์/รูป</th><th>วันที่จัด</th><th>ชื่อกิจกรรม/เนื้อหา/ลิงก์</th><th>จัดการ</th></tr></thead>
-                <tbody>
-                    <?php foreach($event_items as $row):
-                        $event_file    = $row['image_name'] ?? 'default.jpg';
-                        $event_content = $row['content'] ?? '';
-                        $is_pdf        = strtolower(pathinfo($event_file, PATHINFO_EXTENSION)) === 'pdf';
-                        $event_link    = $row['link_url'] ?? '';
-                    ?>
-                    <tr>
-                        <td width="12%">
-                            <?php if($is_pdf): ?>
-                                <a href="uploads/<?= $event_file ?>" target="_blank" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf-fill"></i> ดู PDF</a>
-                            <?php else: ?>
-                                <img src="uploads/<?= $event_file ?>" width="60" class="img-thumbnail" onerror="this.src='https://placehold.co/60x60?text=No+Image'">
-                            <?php endif; ?>
-                        </td>
-                        <td width="18%"><?= dateToThaiText($row['event_date']) ?></td>
-                        <td>
-                            <strong><?= htmlspecialchars($row['title']) ?></strong>
-                            <div class="text-muted small text-truncate text-preview-medium"><?= htmlspecialchars($event_content) ?></div>
-                            <?php if(!empty($event_link)): ?>
-                                <div class="small mt-1"><i class="bi bi-link-45deg text-primary"></i> <a href="<?= htmlspecialchars($event_link) ?>" target="_blank" class="text-decoration-none text-truncate d-inline-block text-preview-link"><?= htmlspecialchars($event_link) ?></a></div>
-                            <?php endif; ?>
-                        </td>
-                        <td width="15%">
-                            <button class="btn btn-outline-edit-style btn-sm me-1" onclick="editEvent(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['title'])) ?>', '<?= addslashes(htmlspecialchars($event_content)) ?>', '<?= $row['event_date'] ?>', '<?= $event_file ?>', '<?= addslashes(htmlspecialchars($event_link)) ?>')">แก้ไข</button>
-                            <a href="admin.php?tab=events&del_event=<?= $row['id'] ?>" class="btn btn-outline-delete-style btn-sm" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?')">ลบ</a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php endif; ?>
-
-        <!-- ==================== TAB: DEPARTMENTS ==================== -->
         <?php if($active_tab == 'departments'): ?>
         <div>
             <h5 class="text-hospital mb-3 fw-bold">จัดการหอผู้ป่วย / หน่วยงาน</h5>
@@ -499,22 +348,24 @@ if ($active_tab == 'news') {
                 </div>
             </form>
 
-            <table class="table table-striped align-middle mt-4">
-                <thead><tr><th>ชื่อหน่วยงาน / หอผู้ป่วย</th><th>ลิงก์ประจำแผนก</th><th>จัดการ</th></tr></thead>
+            <div style="overflow-x: auto;">
+            <table class="table table-striped align-middle mt-4" style="min-width: 600px;">
+                <thead><tr><th>ชื่อหน่วยงาน / หอผู้ป่วย</th><th>ลิงก์ประจำแผนก</th><th style="white-space: nowrap; width: 140px;">จัดการ</th></tr></thead>
                 <tbody>
                     <?php foreach($dept_items as $row):
                         $dept_link = $row['link_url'] ?? '';
                     ?>
                     <tr>
                         <td><?= htmlspecialchars($row['name']) ?></td>
-                        <td>
+                        <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             <?php if(!empty($dept_link)): ?>
-                                <i class="bi bi-link-45deg text-primary"></i> <a href="<?= htmlspecialchars($dept_link) ?>" target="_blank" class="text-decoration-none"><?= htmlspecialchars($dept_link) ?></a>
+                                <i class="bi bi-link-45deg text-primary"></i>
+                                <a href="<?= htmlspecialchars($dept_link) ?>" target="_blank" class="text-decoration-none" title="<?= htmlspecialchars($dept_link) ?>"><?= htmlspecialchars($dept_link) ?></a>
                             <?php else: ?>
                                 <span class="text-muted small">ไม่ได้ระบุลิงก์</span>
                             <?php endif; ?>
                         </td>
-                        <td width="15%">
+                        <td style="white-space: nowrap; width: 140px;">
                             <button class="btn btn-outline-edit-style btn-sm me-1" onclick="editDept(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['name'])) ?>', '<?= addslashes(htmlspecialchars($dept_link)) ?>')">แก้ไข</button>
                             <a href="admin.php?tab=departments&del_dept=<?= $row['id'] ?>" class="btn btn-outline-delete-style btn-sm" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?')">ลบ</a>
                         </td>
@@ -522,10 +373,10 @@ if ($active_tab == 'news') {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         </div>
         <?php endif; ?>
 
-        <!-- ==================== TAB: DEPT_CONTENTS ==================== -->
         <?php if($active_tab == 'dept_contents'): ?>
         <div>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -560,18 +411,11 @@ if ($active_tab == 'news') {
                     <input type="hidden" name="action_dept_content" id="dept_content_action" value="create">
                     <input type="hidden" name="id" id="dept_content_id">
                     <input type="hidden" name="old_file" id="dept_content_old_file">
+                    
+                    <input type="hidden" name="department_id" id="dept_content_department_id" value="<?= $selected_dept_id ?>">
+
                     <div class="row g-2 mb-2">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">กลุ่มงาน / แผนก</label>
-                            <select name="department_id" id="dept_content_department_id" class="form-select" required>
-                                <?php foreach($all_depts as $dept): ?>
-                                    <option value="<?= $dept['id'] ?>" <?= (int)$dept['id'] === $selected_dept_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($dept['name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">หมวดข้อมูล</label>
                             <select name="section" id="dept_content_section" class="form-select" required>
                                 <?php foreach($department_content_sections as $key => $label): ?>
@@ -579,7 +423,7 @@ if ($active_tab == 'news') {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">ลำดับแสดงผล</label>
                             <input type="number" name="sort_order" id="dept_content_sort_order" class="form-control" value="1" min="1" step="1">
                         </div>
@@ -650,7 +494,7 @@ if ($active_tab == 'news') {
                             </td>
                             <td class="dept-content-file-cell">
                                 <?php foreach($content_files as $file): ?>
-                                    <div class="admin-file-link"><i class="bi bi-paperclip text-hospital"></i> <a href="uploads/<?= htmlspecialchars($file) ?>" target="_blank"><?= htmlspecialchars($file) ?></a></div>
+                                   <div class="mb-1"><a href="uploads/<?= htmlspecialchars($file) ?>" target="_blank"><i class="bi bi-paperclip text-hospital"></i> <?= htmlspecialchars($file) ?></a></div>
                                 <?php endforeach; ?>
                                 <?php if(!empty($content_link)): ?>
                                     <div class="admin-file-link"><i class="bi bi-link-45deg text-primary"></i> <a href="<?= htmlspecialchars($content_link) ?>" target="_blank"><?= htmlspecialchars($content_link) ?></a></div>
@@ -673,7 +517,6 @@ if ($active_tab == 'news') {
         </div>
         <?php endif; ?>
 
-        <!-- ==================== TAB: BANNERS ==================== -->
         <?php if($active_tab == 'banners'): ?>
         <div>
             <h5 class="text-hospital mb-3 fw-bold">จัดการ Banner / Slider หน้าแรก</h5>
@@ -775,13 +618,7 @@ if ($active_tab == 'news') {
         </div>
         <?php endif; ?>
 
-    </div><!-- /tab-content -->
-</div><!-- /container -->
-
-<!-- ==================== MODALS ==================== -->
-
-<!-- Modal: แก้ไขข่าว -->
-<div class="modal fade" id="modalNews" tabindex="-1" aria-hidden="true">
+    </div></div><div class="modal fade" id="modalNews" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <form action="admin.php?tab=news" method="POST" enctype="multipart/form-data" class="modal-content">
       <div class="modal-header"><h5 class="text-hospital fw-bold">แก้ไขข่าวประชาสัมพันธ์</h5></div>
@@ -809,30 +646,6 @@ if ($active_tab == 'news') {
   </div>
 </div>
 
-<!-- Modal: แก้ไขกิจกรรม -->
-<div class="modal fade" id="modalEvent" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <form action="admin.php?tab=events" method="POST" enctype="multipart/form-data" class="modal-content">
-      <div class="modal-header"><h5 class="text-hospital fw-bold">แก้ไขกิจกรรม</h5></div>
-      <div class="modal-body">
-        <input type="hidden" name="action_event" value="update">
-        <input type="hidden" name="id" id="edit_event_id">
-        <input type="hidden" name="old_image" id="edit_event_old_image">
-        <div class="mb-3"><label class="form-label fw-bold">ชื่อกิจกรรม</label><input type="text" name="title" id="edit_event_title" class="form-control" required></div>
-        <div class="mb-3"><label class="form-label fw-bold">วันที่จัดกิจกรรม</label><input type="text" name="event_date" id="edit_event_date" class="form-control bg-white" required></div>
-        <div class="mb-3"><label class="form-label fw-bold">ลิงก์หน้ากิจกรรมเพิ่มเติมภายนอก</label><input type="url" name="link_url" id="edit_event_link" class="form-control"></div>
-        <div class="mb-3"><label class="form-label fw-bold">เนื้อหากิจกรรมแบบละเอียด</label><textarea name="content" id="edit_event_content" class="form-control" rows="4"></textarea></div>
-        <div class="mb-3"><label class="form-label fw-bold">เปลี่ยนไฟล์ (เว้นว่างเพื่อใช้ไฟล์เดิม)</label><input type="file" name="image[]" class="form-control" accept="image/*,application/pdf" multiple></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-        <button type="submit" class="btn btn-hospital-orange">บันทึกการแก้ไข</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal: แก้ไขหน่วยงาน -->
 <div class="modal fade" id="modalDept" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form action="admin.php?tab=departments" method="POST" class="modal-content">
@@ -851,7 +664,6 @@ if ($active_tab == 'news') {
   </div>
 </div>
 
-<!-- Modal: แก้ไข Banner -->
 <div class="modal fade" id="modalBanner" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <form action="admin.php?tab=banners" method="POST" enctype="multipart/form-data" class="modal-content">
@@ -899,7 +711,6 @@ if ($active_tab == 'news') {
   </div>
 </div>
 
-<!-- ==================== JS ==================== -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
@@ -910,7 +721,7 @@ const flatpickrConfig = {
     dateFormat: "Y-m-d",
     altInput: true,
     altFormat: "d/m/Y",
-    defaultDate: "2026-06-16",
+    defaultDate: "<?= date('Y-m-d') ?>",
     onUpdate:     function(s, d, i) { formatYearToThai(i); },
     onReady:      function(s, d, i) {
         formatYearToThai(i);
@@ -938,10 +749,6 @@ function formatYearToThai(instance) {
     const mainPicker      = flatpickr("#news_date_picker", flatpickrConfig);
     const modalNewsPicker = flatpickr("#edit_news_date",   flatpickrConfig);
 <?php endif; ?>
-<?php if($active_tab == 'events'): ?>
-    const eventPicker      = flatpickr("#event_date_picker", flatpickrConfig);
-    const modalEventPicker = flatpickr("#edit_event_date",   flatpickrConfig);
-<?php endif; ?>
 
 // ----- Edit functions -----
 function editNews(id, title, content, date, img, isNew, link) {
@@ -955,16 +762,7 @@ function editNews(id, title, content, date, img, isNew, link) {
     new bootstrap.Modal(document.getElementById('modalNews')).show();
 }
 
-function editEvent(id, title, content, date, img, link) {
-    document.getElementById('edit_event_id').value        = id;
-    document.getElementById('edit_event_title').value     = title;
-    document.getElementById('edit_event_content').value   = content;
-    document.getElementById('edit_event_old_image').value = img;
-    document.getElementById('edit_event_link').value      = link;
-    if (typeof modalEventPicker !== 'undefined') { modalEventPicker.setDate(date); formatYearToThai(modalEventPicker); }
-    new bootstrap.Modal(document.getElementById('modalEvent')).show();
-}
-
+// ล็อกระบบให้ department_id ซิงค์และดึงข้อมูลมาแก้ไขได้ตามปกติ
 function editDept(id, name, link) {
     document.getElementById('edit_dept_id').value   = id;
     document.getElementById('edit_dept_name').value = name;
@@ -989,11 +787,20 @@ function editDeptContent(item) {
 function resetDeptContentForm() {
     const form = document.getElementById('deptContentForm');
     if (!form) return;
+    
+    // เก็บค่า department_id ปัจจุบันไว้ก่อนล้างฟอร์ม
+    const currentDeptId = document.getElementById('dept_content_department_id').value;
+    
     form.reset();
+    
     document.getElementById('dept_content_action').value   = 'create';
     document.getElementById('dept_content_id').value       = '';
     document.getElementById('dept_content_old_file').value = '';
     document.getElementById('dept_content_sort_order').value = '1';
+    
+    // คืนค่า department_id ประจำกลุ่มงานกลับเข้าไปตามเดิม
+    document.getElementById('dept_content_department_id').value = currentDeptId;
+    
     document.getElementById('dept_content_submit').textContent = '+ เพิ่มข้อมูล';
 }
 
