@@ -42,21 +42,9 @@ if (!isset($_SESSION['has_visited_hospital'])) {
     $counter_data['today']++;
     $counter_data['week']++;
     $counter_data['total']++;
-    file_put_contents($counter_file, json_encode($counter_data, JSON_PRETTY_PRINT));
+    file_put_contents($counter_file, json_encode($counter_data, JSON_PRETTY_PRINT), LOCK_EX);
 }
 // =================================================================================
-
-// สร้างตาราง banners ถ้ายังไม่มี
-$conn->exec("CREATE TABLE IF NOT EXISTS banners (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    subtitle TEXT NULL,
-    image_name VARCHAR(500) NULL,
-    link_url VARCHAR(500) NULL,
-    sort_order INT NOT NULL DEFAULT 1,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 // ฟังก์ชันแปลงรูปแบบวันที่ ค.ศ. เป็น พ.ศ. สไตล์ย่อ
 function dateToThaiShort($dateStr) {
@@ -85,9 +73,6 @@ function dateToThaiFull($dateStr) {
 // 🔄 QUERY ดึงข้อมูลจาก MySQL
 $stmt_news = $conn->query("SELECT * FROM news ORDER BY id DESC");
 $news_list = $stmt_news->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt_events = $conn->query("SELECT * FROM events ORDER BY id DESC LIMIT 4");
-$event_list = $stmt_events->fetchAll(PDO::FETCH_ASSOC);
 
 $stmt_depts = $conn->query("SELECT * FROM departments ORDER BY id ASC");
 $dept_list = $stmt_depts->fetchAll(PDO::FETCH_ASSOC);
@@ -492,35 +477,5 @@ window.addEventListener('scroll', function() {
 <button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="กลับด้านบน">
     <i class="bi bi-chevron-up"></i>
 </button>
-<style>
-#scrollTopBtn {
-    position: fixed;
-    bottom: 28px;
-    right: 24px;
-    z-index: 9999;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    border: none;
-    background: var(--hosp-orange);
-    color: #fff;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-    cursor: pointer;
-    opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 0.25s, transform 0.25s;
-    pointer-events: none;
-}
-#scrollTopBtn.show {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-#scrollTopBtn:hover { background: var(--hosp-orange-dark); }
-</style>
 </body>
 </html>
